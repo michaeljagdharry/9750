@@ -1,0 +1,150 @@
+---
+title: "Project"
+author: Michael, Charles, Khang, Aaron C Hall
+date: April 4th, 2020
+output:
+  pdf_document
+---
+
+
+
+## Heading
+
+
+body
+
+```{r viridis demo}
+library(viridis)
+image(volcano, col=viridis(200))
+```
+
+$$
+y = f(x)
+$$
+
+```{r michael}
+library(tidyverse)
+library(lubridate)
+library(purrr)
+```
+
+
+
+```{r read.csv}
+library(readr)
+nyc_rolling_sales <- read_csv("nyc-rolling-sales.csv")
+#read.csv("nyc-rolling-sales.csv") -> nyc
+nyc <- as_tibble(nyc)
+```
+
+```{r rest}
+lapply(nyc,class) -> columns
+#View(columns) #Many numerical columns are character types, like sale price, sale  date, land square feet, gross square feet.
+class(nyc$`SALE PRICE`)
+```
+
+```{r convert}
+#Converting columns to their appropriate type
+nyc$`SALE DATE` <- make_date(nyc$`SALE DATE`)
+nyc$`SALE PRICE` <- as.numeric(nyc$`SALE PRICE`)
+nyc$`LAND SQUARE FEET` <- as.numeric(nyc$`LAND SQUARE FEET`)
+nyc$`GROSS SQUARE FEET` <- as.numeric(nyc$`GROSS SQUARE FEET`)
+```
+
+```{r check}
+#Checking how many missing values there are for response and predictor variables 
+nyc %>% filter(is.na(`GROSS SQUARE FEET`)) %>% count(`GROSS SQUARE FEET`) #27,612 NAs
+nyc %>% filter(is.na(`SALE PRICE`)) %>%  count(`SALE PRICE`) #14,561 NAs
+```
+```{r count}
+#Counting how many observations there are by neighborhood
+nyc %>% 
+  group_by(BOROUGH) %>% group_by(NEIGHBORHOOD) %>% 
+  mutate(avg_sale_price = mean(`SALE PRICE`, na.rm = TRUE), n=n()) %>% 
+  distinct(BOROUGH, NEIGHBORHOOD, avg_sale_price, n) -> nyc_neigh
+```
+
+```{r enough data}
+#To see if there is enough data by neighborhood to perform regression, I check
+#what proportion of neighborhoods have lots of observations
+quantile(nyc_neigh$n,probs = seq(.01,1,length.out = 100))
+#over 85% of the neighborhoods have over 60 data points, enough for regression
+```
+
+```{r each neighborhood}
+#Associating with each neighborhood it's own data frame
+nyc %>% 
+  group_by(BOROUGH) %>% group_by(NEIGHBORHOOD) %>% 
+  nest() -> nyc_neigh_nest
+```
+
+```{r lm}
+#Creating a LM function to map the nested data to
+lm_price_gsqft <- function(df) {
+  x = df$`GROSS SQUARE FEET`
+  y = df$`SALE PRICE`
+  
+  return(
+    lm(y~x, data = df)
+  )
+}
+```
+
+```{r map}
+#Produces "0 non-NA cases" error:
+map(nyc_neigh_nest$data, lm_price_gsqft) -> models
+```
+
+```{r print}
+#This means there are some nested dataframes for which either all x or all y values are NA.
+#Upon testing, the error actually occurs when there are no (x,y) pairs such that both x and y are numeric.
+
+
+#Finding the troublesome neighborhoods and printing their row numbers.
+PRINT_ALL_NA <- function(df) {
+
+  for (i in 1:dim(df)[1]) 
+  {
+    x = df$data[[i]]$`GROSS SQUARE FEET`
+    y = df$data[[i]]$`SALE PRICE`
+    
+    if (every(x+y,is.na)) 
+    {
+      print(df$NEIGHBORHOOD[i])
+      print(paste("Row number is",i))
+    }
+  }
+}
+
+PRINT_ALL_NA(nyc_neigh_nest)
+#Ruining our linear model are Morningside Heights, Flushing Meadow Park, and
+#Bloomfield, at rows 26, 157, 202. Let's remove these neighborhoods.
+```
+
+```{r n}
+n <- nyc_neigh_nest[-c(26, 157, 202),]
+```
+
+```{r lm for each neighborhood}
+#Creating a linear model for each neighborhood, and arranging by r^2:
+models <- map(n$data, lm_price_gsqft) 
+n %>% mutate(model = map(data, lm_price_gsqft)) %>%
+  mutate(glance = map(model, broom::glance)) %>% 
+  unnest(glance) %>% 
+  arrange(desc(r.squared))
+
+
+################################################################
+#Next idea: using lubridate to create a weekday column to analyze sales by day.
+
+```
+
+
+
+
+
+
+
+
+
+
