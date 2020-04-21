@@ -19,20 +19,23 @@ Class project for STA 9750.
     - square footage
     - building class (commercial, multifamily, single-family)
     - location: borough, neighborhood, block, 
-  - where are most transactions?
-  - which neighborhoods are most expensive?
+  - where are most transactions? (code committed)
+  - which neighborhoods are most expensive? (code committed)
   - is there a premium for single-family homes?
+      -Idea for answer: Perform two regressions, one for single-family homes, and one for non-single family homes. 
+                        Compare the beta1's: these are the rates of change of price with respect to sqft. 
+                        A higher beta1 (price differential) for single-family homes would then suggest the existence of a premium.  
   - are most sales closed on weekends? weekdays? <- ACH
 
 - Need to clean 
-  - remove x1? index by borough
-  - sales price is a character vector -> numeric
-    - need to exclude nonsense sales (e.g. at ~$0)
+  - remove x1? index by borough (check)
+  - sales price is a character vector -> numeric (check)
+    - need to exclude nonsense sales (e.g. at ~$0) (check)
     - looking for arms-length transactions
     - histogram
   - lubridate the sales date
-  - square feet -> numeric
-  - Borough is not numeric -> unordered categorical
+  - square feet -> numeric (check)
+  - Borough is not numeric -> unordered categorical (check)
     1. Manhattan
     2. Bronx
     3. Brooklyn
@@ -53,6 +56,6 @@ Class project for STA 9750.
   - categorical predictors in neighborhoods
 
 - Dataviz on new features
-- regressions 
+- regressions
 - Dataviz of regressions
 - Analysis and conclusions
