@@ -136,6 +136,7 @@ n %>% mutate(model = map(data, lm_price_gsqft)) %>%
 
 ################################################################
 #Next idea: using lubridate to create a weekday column to analyze sales by day.
+# Also instead of sales by weekday, we can do like group of 5 days in the month - 1-5, 6-10, 11-15, 16-20,21-25, 26-31 to see if the time of the month affect anything
 
 ```
 
