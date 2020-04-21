@@ -51,11 +51,39 @@ nyc$`LAND SQUARE FEET` <- as.numeric(nyc$`LAND SQUARE FEET`)
 nyc$`GROSS SQUARE FEET` <- as.numeric(nyc$`GROSS SQUARE FEET`)
 ```
 
+```{r remove transfers (mike)}
+#Removing entries where sale price = 0; these observations are transfers of property
+dim(nyc)[1] - dim(nyc %>% filter(`SALE PRICE` > 0))[1] #24789 observations are transfers
+nyc <- nyc %>% filter(`SALE PRICE` > 0)
+
+Here are the top ten most popular neighborhoods:
+```{r most tranactions (mike)}
+most_transactions <- nyc %>%
+  count(NEIGHBORHOOD) %>% 
+  arrange(desc(n)) %>% 
+  mutate(rank = percent_rank(n))
+  
+most_transactions %>% slice(1:10)
+```
+
+Midtown CBD was the most expensive neighborhood, with an average price of about $27.5 million (n=151).
+```{r most expensive (mike)}
+most_expensive <- nyc %>% 
+  group_by(BOROUGH, NEIGHBORHOOD) %>% 
+  summarise(
+    avg_sale_price = mean(`SALE PRICE`, na.rm = TRUE),
+    n=n()) %>% 
+  arrange(desc(avg_sale_price))
+  
+most_expensive %>% slice(1:10)
+```
+
 ```{r check}
 #Checking how many missing values there are for response and predictor variables 
 nyc %>% filter(is.na(`GROSS SQUARE FEET`)) %>% count(`GROSS SQUARE FEET`) #27,612 NAs
-nyc %>% filter(is.na(`SALE PRICE`)) %>%  count(`SALE PRICE`) #14,561 NAs
+nyc %>% filter(is.na(`SALE PRICE`)) %>%  count(`SALE PRICE`) #0 NAs
 ```
+
 ```{r count}
 #Counting how many observations there are by neighborhood
 nyc %>% 
@@ -125,13 +153,20 @@ PRINT_ALL_NA(nyc_neigh_nest)
 n <- nyc_neigh_nest[-c(26, 157, 202),]
 ```
 
-```{r lm for each neighborhood}
+```{r lm for each neighborhood (mike)}
 #Creating a linear model for each neighborhood, and arranging by r^2:
 models <- map(n$data, lm_price_gsqft) 
-n %>% mutate(model = map(data, lm_price_gsqft)) %>%
+
+n %>% 
+  mutate(model = map(data, lm_price_gsqft)) %>%
   mutate(glance = map(model, broom::glance)) %>% 
-  unnest(glance) %>% 
-  arrange(desc(r.squared))
+  unnest(glance) -> nyc_models
+
+#Adding n to each model provides better judgment of r.squared. 
+nyc %>% 
+  count(NEIGHBORHOOD) %>% 
+  inner_join(nyc_models) %>% 
+  arrange(desc(r.squared)) -> nyc_models
 
 
 ################################################################
