@@ -51,6 +51,12 @@ nyc$`LAND SQUARE FEET` <- as.numeric(nyc$`LAND SQUARE FEET`)
 nyc$`GROSS SQUARE FEET` <- as.numeric(nyc$`GROSS SQUARE FEET`)
 ```
 
+```{r decoding borough, removing X1 (mike)}
+#Decoding BOROUGH to named vector, and removing X1, a redundant index variable
+nyc$BOROUGH <- factor(x = b,labels = c("Manhattan", "Bronx", "Brooklyn", "Queens", "Staten Island"))
+nyc <- nyc %>% select(-X1)
+```
+
 ```{r remove transfers (mike)}
 #Removing entries where sale price = 0; these observations are transfers of property
 dim(nyc)[1] - dim(nyc %>% filter(`SALE PRICE` > 0))[1] #24789 observations are transfers
